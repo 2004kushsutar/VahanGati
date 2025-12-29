@@ -274,3 +274,84 @@ class Vehicle(pygame.sprite.Sprite):
             else: 
                 if((self.y>=self.stop or self.crossed == 1 or (currentGreen==3 and currentYellow==0)) and (self.index==0 or self.y>(vehicles[self.direction][self.lane][self.index-1].y + vehicles[self.direction][self.lane][self.index-1].currentImage.get_rect().height + gap2) or (vehicles[self.direction][self.lane][self.index-1].turned==1))):                
                     self.y -= self.speed
+
+def announce_next_signal_count():
+    next_dir = directionNumbers[nextGreen]
+    count = nextSignalVehicleCount[nextGreen]
+
+    engine = pyttsx3.init()
+
+    voices = engine.getProperty('voices')
+
+    # 🔊 Choose voice (change index if needed)
+    engine.setProperty('voice', voices[1].id)   # 0 = male, 1 = female (usually)
+
+    # 🗣 Optional tweaks
+    engine.setProperty('rate', 160)    # speed (default ~200)
+    engine.setProperty('volume', 1.0)  # 0.0 to 1.0
+
+    engine.say(f"Next signal {next_dir} has {count} vehicles waiting")
+    engine.runAndWait()
+
+# Initialization of signals with default values
+def initialize():
+    ts1 = TrafficSignal(0, defaultYellow, defaultGreen, defaultMinimum, defaultMaximum)
+    signals.append(ts1)
+    ts2 = TrafficSignal(ts1.red+ts1.yellow+ts1.green, defaultYellow, defaultGreen, defaultMinimum, defaultMaximum)
+    signals.append(ts2)
+    ts3 = TrafficSignal(defaultRed, defaultYellow, defaultGreen, defaultMinimum, defaultMaximum)
+    signals.append(ts3)
+    ts4 = TrafficSignal(defaultRed, defaultYellow, defaultGreen, defaultMinimum, defaultMaximum)
+    signals.append(ts4)
+    repeat()
+
+# Set time according to formula
+def setTime():
+    global noOfCars, noOfBikes, noOfBuses, noOfTrucks, noOfAutos, noOfTaxis, noOfLanes
+    global carTime, busTime, truckTime, autoTime, bikeTime, taxiTime
+
+#    detection_result=detection(currentGreen,tfnet)
+#    greenTime = math.ceil(((noOfCars*carTime) + (noOfRickshaws*rickshawTime) + (noOfBuses*busTime) + (noOfBikes*bikeTime))/(noOfLanes+1))
+#    if(greenTime<defaultMinimum):
+#       greenTime = defaultMinimum
+#    elif(greenTime>defaultMaximum):
+#       greenTime = defaultMaximum
+    # greenTime = len(vehicles[currentGreen][0])+len(vehicles[currentGreen][1])+len(vehicles[currentGreen][2])
+    # noOfVehicles = len(vehicles[directionNumbers[nextGreen]][1])+len(vehicles[directionNumbers[nextGreen]][2])-vehicles[directionNumbers[nextGreen]]['crossed']
+    # print("no. of vehicles = ",noOfVehicles)
+    noOfCars, noOfBuses, noOfTrucks, noOfAuto, noOfBikes, noOfTaxi = 0,0,0,0,0,0
+    for j in range(len(vehicles[directionNumbers[nextGreen]][0])):
+        vehicle = vehicles[directionNumbers[nextGreen]][0][j]
+        if(vehicle.crossed==0):
+            vclass = vehicle.vehicleClass
+            # print(vclass)
+            noOfBikes += 1
+    for i in range(1,3):
+        for j in range(len(vehicles[directionNumbers[nextGreen]][i])):
+            vehicle = vehicles[directionNumbers[nextGreen]][i][j]
+            if(vehicle.crossed==0):
+                vclass = vehicle.vehicleClass
+                # print(vclass)
+                if(vclass=='car'):
+                    noOfCars += 1
+                elif(vclass=='bus'):
+                    noOfBuses += 1
+                elif(vclass=='truck'):
+                    noOfTrucks += 1
+                elif(vclass=='auto'):
+                    noOfAuto += 1
+                elif(vclass=='taxi'):
+                    noOfTaxi += 1
+    # print(noOfCars)
+    greenTime = math.ceil(((noOfCars*carTime) + (noOfAuto*autoTime) + (noOfBuses*busTime) + (noOfTrucks*truckTime)+ (noOfBikes*bikeTime) + (noOfTaxi*taxiTime))/(noOfLanes+1))
+    # greenTime = math.ceil((noOfVehicles)/noOfLanes) 
+    print('Green Time: ',greenTime)
+    if(greenTime<defaultMinimum):
+        greenTime = defaultMinimum
+    elif(greenTime>defaultMaximum):
+        greenTime = defaultMaximum
+    # greenTime = random.randint(15,50)
+    signals[(currentGreen+1)%(noOfSignals)].green = greenTime
+
+
+nextSignalVehicleCount = [0, 0, 0, 0]
